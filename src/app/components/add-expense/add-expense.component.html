@@ -1,0 +1,112 @@
+<div class="container mt-5 d-flex justify-content-center">
+  <div class="card p-4 shadow" style="max-width: 500px; width: 100%;">
+    <h2 class="text-center mb-4">Add New Expense</h2>
+
+    <!-- single form -->
+    <form (ngSubmit)="addExpense()">
+      <!-- Amount -->
+      <div class="form-group mb-3">
+        <label class="form-label" for="amount">Amount ($)</label>
+        <input
+          id="amount"
+          type="number"
+          [(ngModel)]="expense.amount"
+          name="amount"
+          placeholder="Enter amount"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <!-- Date -->
+      <div class="form-group mb-3">
+        <label class="form-label" for="date">Date</label>
+        <input
+          id="date"
+          type="date"
+          [(ngModel)]="expense.date"
+          name="date"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <!-- Category dropdown -->
+      <div class="form-group mb-3">
+        <label class="form-label" for="category">Category</label>
+        <select
+          id="category"
+          class="form-select"
+          [(ngModel)]="expense.category"
+          name="category"
+          required
+        >
+          <option *ngFor="let cat of categories" [value]="cat">
+            {{ cat }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group mb-3">
+        <label class="form-label" for="description">Description</label>
+        <input
+          id="description"
+          type="text"
+          [(ngModel)]="expense.description"
+          name="description"
+          placeholder="Enter description"
+          class="form-control"
+        />
+      </div>
+
+      <!-- Refund checkbox -->
+      <div class="mb-4 form-check">
+        <input
+          id="isRefund"
+          type="checkbox"
+          class="form-check-input"
+          [(ngModel)]="expense.isRefund"
+          name="isRefund"
+        />
+        <label class="form-check-label" for="isRefund">
+          Is this a refund?
+        </label>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn btn-primary w-100">
+        Save Expense
+      </button>
+
+      <!-- Recurring checkbox -->
+<div class="form-check mb-3">
+  <input
+    id="isRecurring"
+    type="checkbox"
+    class="form-check-input"
+    [(ngModel)]="expense.isRecurring"
+    name="isRecurring"
+  />
+  <label for="isRecurring" class="form-check-label">
+    This is a recurring expense
+  </label>
+</div>
+
+<div *ngIf="expense.isRecurring" class="mb-3">
+  <label for="recurringFrequency" class="form-label">Recurring Frequency</label>
+  <select
+    id="recurringFrequency"
+    class="form-select"
+    [(ngModel)]="expense.recurringFrequency"
+    name="recurringFrequency"
+  >
+    <option value="Monthly">Monthly</option>
+    <option value="Weekly">Weekly</option>
+    <option value="Yearly">Yearly</option>
+  </select>
+</div>
+
+    </form>
+  </div>
+</div>

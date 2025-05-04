@@ -1,0 +1,130 @@
+.container {
+  background-color: #f2f7f4;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+.table th, .table td {
+  vertical-align: middle;
+}
+
+.btn {
+  border-radius: 20px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+.btn:hover {
+  transform: scale(1.05);
+}
+
+.progress-bar {
+  font-weight: bold;
+}
+
+.toast {
+  border-radius: 10px;
+  font-weight: bold;
+}
+.toast-container {
+  z-index: 1055;
+}
+
+/* Floating Add Button */
+.floating-add-button,
+.floating-reset-button,
+.floating-date-button {
+  position: fixed;
+  bottom: 40px;
+  z-index: 2000;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 28px;
+  padding: 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  transition: transform .2s;
+}
+.floating-add-button:hover,
+.floating-reset-button:hover,
+.floating-date-button:hover {
+  transform: translateY(-4px);
+}
+.floating-date-button   { right: 160px; }
+.floating-reset-button  { right:  90px; }
+.floating-add-button    { right:  20px; }
+
+.chart-wrapper {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.floating-add-button,
+.floating-reset-button,
+.floating-date-button {
+  position: fixed;
+  bottom: 40px;
+  z-index: 2000;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 28px;
+  padding: 0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.floating-add-button:hover,
+.floating-reset-button:hover,
+.floating-date-button:hover {
+  transform: translateY(-4px);
+}
+
+.floating-add-button {
+  right: 20px;
+  background-color: #28a745;
+}
+
+.floating-reset-button {
+  right: 90px;
+  background-color: #dc3545;
+}
+
+.floating-date-button {
+  right: 160px;
+  background-color: #ffc107;
+}
+
+.insight-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  animation: fadeInBadge 0.6s ease-in;
+  max-width: 90%;
+  margin: 0 auto 1rem;
+  text-align: center;
+}
+
+@keyframes fadeInBadge {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.alert-light {
+  border-left: 5px solid #0d6efd;
+  background-color: #f9fafe;
+}
+
+
+

@@ -1,0 +1,212 @@
+<div class="container mt-5">
+  <h2 class="text-center mb-4">Dashboard</h2>
+
+  <!-- 1. Smart Insight Badge -->
+  <div
+    class="insight-badge alert alert-{{ smartInsight.color }} d-inline-flex align-items-center shadow-sm mb-4"
+  >
+    <span class="me-2" style="font-size:1.3rem">{{ smartInsight.icon }}</span>
+    <span class="fw-semibold">{{ smartInsight.message }}</span>
+  </div>
+
+  <!-- 2. Monthly Budget Setter -->
+  <div class="input-group mb-4 justify-content-center" style="max-width:300px">
+    <span class="input-group-text">$</span>
+    <input
+      type="number"
+      class="form-control"
+      [(ngModel)]="userEnteredBudget"
+      placeholder="Monthly Budget"
+    />
+    <button class="btn btn-primary" (click)="updateBudget()">Set Budget</button>
+  </div>
+
+  <!-- 3. Add / Reset Controls -->
+  <div class="text-center mb-5">
+    <button class="btn btn-success btn-lg me-3" (click)="goToAddExpense()">➕ Add New Expense</button>
+    <button class="btn btn-danger btn-sm me-2" (click)="resetExpenses()">🔄 Reset Expenses</button>
+    <button class="btn btn-warning btn-sm" (click)="resetStartDate()">📅 Reset Start Date</button>
+  </div>
+
+  <!-- 4. Overview Row -->
+  <div class="row mb-4">
+    <!-- Monthly Overview Card -->
+    <div class="col-md-6 mb-3">
+      <div class="card shadow-sm h-100 p-4">
+        <h5 class="text-center mb-3">📅 Monthly Overview</h5>
+        <p><strong>Start Date:</strong> {{ startDate }}</p>
+        <p><strong>Budget:</strong> ${{ userEnteredBudget ?? 500 }}</p>
+        <p><strong>Spent:</strong> ${{ totalSpent.toFixed(2) }}</p>
+        <p><strong>Remaining:</strong> ${{ remainingBudget.toFixed(2) }}</p>
+      </div>
+    </div>
+
+    <!-- Forecast Card -->
+    <div class="col-md-6 mb-3">
+      <div class="card shadow-sm h-100 p-4">
+        <h5 class="text-center mb-3">📊 Forecast</h5>
+        <p class="text-center">{{ forecastInsight }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Recurring Forecast -->
+  <div class="text-center mb-4">
+    <strong>Forecasted Recurring:</strong> ${{ recurringForecast.toFixed(2) }}
+  </div>
+
+  <!-- 6. Category Budgets -->
+  <div class="card shadow-sm p-4 mb-5">
+    <h5 class="text-center mb-4">🎯 Category Budgets</h5>
+    <ng-container *ngFor="let cat of getCategoryKeys()">
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <strong>{{ cat }}</strong>
+          <small>
+            ${{ (categorySpending[cat] || 0).toFixed(2) }} /
+            <input
+              type="number"
+              class="form-control form-control-sm d-inline-block"
+              style="width:80px"
+              [value]="categoryBudgets[cat]"
+              (change)="updateCategoryBudget(cat, $event)"
+            />
+          </small>
+        </div>
+        <div class="progress" style="height:12px">
+          <div
+            class="progress-bar bg-success"
+            [style.width.%]="
+              categorySpending[cat] > 0
+                ? (categorySpending[cat] / categoryBudgets[cat]) * 100
+                : 0
+            "
+          ></div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- 7. Pie Chart -->
+  <div class="chart-wrapper mb-5">
+    <canvas
+      baseChart
+      [datasets]="[ { data: pieChartData, backgroundColor: pieChartColors[0].backgroundColor } ]"
+      [labels]="pieChartLabels"
+      [options]="pieChartOptions"
+      type="pie"
+    >
+    </canvas>
+  </div>
+
+  <!-- 8. Overall Progress Bar -->
+  <div class="progress mb-3" style="height:30px">
+    <div
+      class="progress-bar progress-bar-striped progress-bar-animated"
+      role="progressbar"
+      [ngClass]="{
+        'bg-success': spendingPercentage < 70,
+        'bg-warning': spendingPercentage >= 70 && spendingPercentage < 100,
+        'bg-danger': spendingPercentage >= 100
+      }"
+      [style.width.%]="spendingPercentage"
+      [attr.aria-valuenow]="spendingPercentage"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      {{ spendingPercentage.toFixed(1) }}%
+    </div>
+  </div>
+
+  <!-- 9. Overdraft Warning -->
+  <div class="text-center mb-4" *ngIf="remainingBudget < 0">
+    <p class="text-danger fw-bold">
+      🚨 Overdraft: ${{ (-remainingBudget) | number:'1.2-2' }}
+    </p>
+  </div>
+
+  <!-- 10. Expenses Table -->
+  <div *ngIf="expenses.length; else noExpenses">
+    <table class="table table-striped table-bordered shadow">
+      <thead class="table-primary">
+        <tr>
+          <th>ID</th>
+          <th>User</th>
+          <th>Amount</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let e of expenses"
+          [ngClass]="{ 'table-success': e.isRefund, 'table-danger': !e.isRefund }"
+        >
+          <td>{{ e.id }}</td>
+          <td>{{ e.username }}</td>
+          <td>{{ e.amount | number:'1.2-2' }}</td>
+          <td>{{ e.category }}</td>
+          <td>{{ e.description }}</td>
+          <td>{{ e.date }}</td>
+          <td>
+            <button
+              *ngIf="!e.isRefund"
+              (click)="safeMarkAsRefund(e)"
+              class="btn btn-sm btn-outline-danger"
+            >
+              Mark as Refund
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button class="btn btn-outline-secondary"
+        (click)="onLogout()">
+  🔒 Logout
+</button>
+
+
+  <ng-template #noExpenses>
+    <div class="alert alert-info text-center">
+      No expenses found. Add your first expense!
+    </div>
+  </ng-template>
+
+  <!-- 11. Toast -->
+  <div
+    *ngIf="showToast"
+    class="toast-container position-fixed bottom-0 end-0 p-3"
+  >
+    <div class="toast show text-white bg-success">
+      <div class="toast-body">Refund completed! ✅</div>
+    </div>
+  </div>
+
+  <!-- 12. Floating Buttons (optional) -->
+  <button
+    (click)="goToAddExpense()"
+    class="btn btn-success floating-add-button"
+    title="Add Expense"
+  >
+    ➕
+  </button>
+  <button
+    (click)="resetExpenses()"
+    class="btn btn-danger floating-reset-button"
+    title="Reset Expenses"
+  >
+    🔄
+  </button>
+  <button
+    (click)="resetStartDate()"
+    class="btn btn-warning floating-date-button"
+    title="Reset Start Date"
+  >
+    📅
+  </button>
+</div>
+

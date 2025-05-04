@@ -1,0 +1,40 @@
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    min-width: 250px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    z-index: 1050;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    opacity: 0.95;
+    animation: slide-in 0.5s ease;
+  }
+  
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 0.95;
+    }
+  }
+  
+  .toast.success {
+    background-color: #28a745; 
+  }
+  
+  .toast.error {
+    background-color: #dc3545; 
+  }
+  
+  .toast.warning {
+    background-color: #ffc107;
+    color: black;
+  }
+  
