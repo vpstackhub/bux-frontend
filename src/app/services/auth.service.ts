@@ -16,9 +16,10 @@ export class AuthService {
   }
 
   login(user: User): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/login`, user);
+    console.log('Login payload:', user); 
+    return this.http.post(`${this.apiUrl}/login`, user);
   }
-
+  
   setCurrentUser(user: User) {
     localStorage.setItem(this.storageKey, JSON.stringify(user));
   }

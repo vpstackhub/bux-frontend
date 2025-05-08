@@ -23,6 +23,8 @@ export class UserSignupComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   register(): void {
+    console.log('🧪 LIVE email value:', this.user.email);
+    console.log('🧪 FULL payload:', this.user);
     this.authService.register(this.user).subscribe({
       next: () => {
         alert('✅ Registration successful!');

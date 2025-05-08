@@ -24,6 +24,8 @@ export class UserLoginComponent {
   ) {}
 
   login(): void {
+    console.log('Login payload:', this.user);
+
     this.authService.login(this.user).subscribe({
       next: userData => {
         this.authService.setCurrentUser(userData);

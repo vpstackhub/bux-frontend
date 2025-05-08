@@ -1,6 +1,6 @@
 <div class="container mt-5" style="max-width: 400px;">
   <h2 class="text-center mb-4">Sign Up</h2>
-  <form (ngSubmit)="register()">
+  <form (ngSubmit)="register()" #signupForm="ngForm">
     <!-- Username -->
     <div class="mb-3">
       <label class="form-label">Username</label>

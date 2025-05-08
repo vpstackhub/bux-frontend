@@ -128,22 +128,23 @@ export class DashboardComponent implements OnInit {
 
   loadExpenses(): void {
     this.expenseService.getAllExpenses().subscribe({
-      next: allExpenses => {
+      next: (allExpenses: Expense[]) => {
         this.expenses = allExpenses;
         console.log('raw expenses from server:', allExpenses);
         console.log('currentUserId is:', this.loggedInUserId);
         const today = new Date();
-      const daysPassed = today.getDate();
-      const totalSpent = this.expenses
-        .filter(e => !e.isRefund)
-        .reduce((sum, e) => sum + e.amount, 0);
-      console.log(`Forecast debug → daysPassed=${daysPassed}, totalSpent=${totalSpent}`);
+        const daysPassed = today.getDate();
+        const totalSpent = this.expenses
+          .filter(e => !e.isRefund)
+          .reduce((sum, e) => sum + e.amount, 0);
+        console.log(`Forecast debug → daysPassed=${daysPassed}, totalSpent=${totalSpent}`);
         this.calculateTotalSpent();
         this.calculateCategoryData();
       },
-      error: err => console.error('Error loading expenses:', err)
+      error: (err: any) => console.error('Error loading expenses:', err)
     });
-  }
+  }  
+  
 
   calculateTotalSpent(): void {
     const budget = this.userEnteredBudget ?? 500;

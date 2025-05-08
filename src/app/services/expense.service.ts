@@ -19,14 +19,19 @@ export class ExpenseService {
   }
 
   /** READ */
-  getAllExpenses(): Observable<Expense[]> {
-    return this.http.get<Expense[]>(this.apiUrl);
-  }
+  getExpensesByUserId(userId: number): Observable<Expense[]> {
+    return this.http.get<Expense[]>(`${environment.apiUrl}/expenses/user/${userId}`);
+  }  
 
   /** REFUND */
   markExpenseAsRefund(expenseId: number): Observable<Expense> {
     return this.http.put<Expense>(`${this.apiUrl}/refund/${expenseId}`, {});
   }
+
+  getAllExpenses() {
+    return this.http.get<Expense[]>(`${this.apiUrl}/expenses`);
+  }
+  
 
   /** RESET ALL */
   deleteAllExpenses(): Observable<string> {
