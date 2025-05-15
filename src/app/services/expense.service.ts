@@ -29,7 +29,7 @@ export class ExpenseService {
   }
 
   getAllExpenses() {
-    return this.http.get<Expense[]>(`${this.apiUrl}/expenses`);
+    return this.http.get<Expense[]>(`${this.apiUrl}`);
   }
   
 

@@ -1,19 +1,23 @@
 <div class="container mt-5" style="max-width: 400px;">
-    <h2 class="text-center mb-4">Login</h2>
-  
+  <div class="card shadow p-4">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">💰 Bux – Budget Tracker</h2>
+      <p class="text-muted">Login to manage your personal and shared expenses</p>
+    </div>  
+
     <form (ngSubmit)="login()">
       <div class="mb-3">
         <label>Email</label>
         <input type="email" [(ngModel)]="user.email" name="email" required class="form-control" />
       </div>
-  
+
       <div class="mb-3">
         <label>Password</label>
         <input type="password" [(ngModel)]="user.password" name="password" required class="form-control" />
       </div>
       <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
-  
+
     <div *ngIf="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
   </div>
 
@@ -21,5 +25,8 @@
     Don’t have an account?
     <a routerLink="/signup" class="text-primary">Sign up</a>
   </p>
+</div>
+
+
   
   
