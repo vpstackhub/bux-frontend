@@ -3,7 +3,7 @@ FROM node:24.0.2-slim AS builder
 WORKDIR /app
 COPY . .
 RUN npm install
-RUN npx ng build bux-frontend --configuration=development
+RUN npx ng build bux-frontend --configuration=production
 
 # Stage 2: Serve with Nginx (still okay for local)
 FROM nginx:1.28.0-alpine-slim
