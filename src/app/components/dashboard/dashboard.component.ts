@@ -147,9 +147,9 @@ export class DashboardComponent implements OnInit {
   
 
   calculateTotalSpent(): void {
-    const budget = this.userEnteredBudget ?? 500;
-    this.totalSpent = this.expenses.filter(e => !e.isRefund).reduce((sum, e) => sum + e.amount, 0);
-    this.spendingPercentage = Math.min((this.totalSpent / budget) * 100, 999);
+  const budget = this.userEnteredBudget ?? 500;
+  this.totalSpent = this.expenses.reduce((sum, e) => sum + e.amount, 0);
+  this.spendingPercentage = Math.min((this.totalSpent / budget) * 100, 999);
   }
 
   updateBudget(): void {
@@ -184,20 +184,30 @@ export class DashboardComponent implements OnInit {
 
 
   private calculateCategoryData(): void {
-    const byCat = new Map<string, number>();
-    for (let cat of this.chartCategories) byCat.set(cat, 0);
-    for (let e of this.expenses) {
-      if (e.isRefund) continue;
-      const bucket = this.chartCategories.includes(e.category) ? e.category : 'Other';
-      byCat.set(bucket, (byCat.get(bucket) ?? 0) + e.amount);
-    }
-    const budget = this.userEnteredBudget ?? 500;
-    const spent = Array.from(byCat.values()).reduce((a, b) => a + b, 0);
-    const remaining = Math.max(budget - spent, 0);
-    this.pieChartLabels = [...this.chartCategories, 'Remaining'];
-    this.pieChartData = [...Array.from(byCat.values()), remaining];
-    setTimeout(() => this.chart?.update(), 0);
+  const byCat = new Map<string, number>();
+
+  // Initialize each category to 0
+  for (let cat of this.chartCategories) {
+    byCat.set(cat, 0);
   }
+
+  // Accumulate amounts by category (including refunds as negative values)
+  for (let e of this.expenses) {
+    const bucket = this.chartCategories.includes(e.category) ? e.category : 'Other';
+    byCat.set(bucket, (byCat.get(bucket) ?? 0) + e.amount);
+  }
+
+  // Calculate pie chart data
+  const budget = this.userEnteredBudget ?? 500;
+  const spent = Array.from(byCat.values()).reduce((a, b) => a + b, 0);
+  const remaining = Math.max(budget - spent, 0);
+
+  this.pieChartLabels = [...this.chartCategories, 'Remaining'];
+  this.pieChartData = [...Array.from(byCat.values()), remaining];
+
+  // Trigger pie chart update
+  setTimeout(() => this.chart?.update(), 0);
+}
 
   resetExpenses(): void {
     if (confirm('Delete all expenses?')) {
@@ -279,10 +289,9 @@ export class DashboardComponent implements OnInit {
     const totals: Record<string, number> = {};
     for (const cat of this.getCategoryKeys()) totals[cat] = 0;
     for (const e of this.expenses) {
-      if (e.isRefund) continue;
-      const cat = this.categoryBudgets[e.category] !== undefined ? e.category : 'Other';
-      totals[cat] = (totals[cat] ?? 0) + e.amount;
-    }
+  const cat = this.categoryBudgets[e.category] !== undefined ? e.category : 'Other';
+  totals[cat] = (totals[cat] ?? 0) + e.amount;
+}
     return totals;
   }
 
