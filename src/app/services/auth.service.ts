@@ -17,12 +17,19 @@ export class AuthService {
 
   login(user: User): Observable<any> {
     console.log('Login payload:', user); 
+
+    localStorage.setItem('authEmail', user.email);
+    localStorage.setItem('authPassword', user.password);
+
     return this.http.post(`${this.apiUrl}/login`, user);
   }
   
   setCurrentUser(user: User) {
-    localStorage.setItem(this.storageKey, JSON.stringify(user));
-  }
+  localStorage.setItem(this.storageKey, JSON.stringify(user));
+  // localStorage.setItem('authEmail', user.email);       // for Basic Auth
+  // localStorage.setItem('authPassword', user.password); // for Basic Auth
+}
+
 
   getCurrentUser(): User | null {
     const json = localStorage.getItem(this.storageKey);
@@ -31,6 +38,8 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem(this.storageKey);
+    localStorage.removeItem('authEmail');       
+    localStorage.removeItem('authPassword');    
   }
 
   isLoggedIn(): boolean {

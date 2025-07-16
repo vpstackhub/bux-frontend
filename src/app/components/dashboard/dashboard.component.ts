@@ -19,7 +19,6 @@ Chart.register(ChartDataLabels);
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-
 export class DashboardComponent implements OnInit {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
@@ -83,7 +82,6 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
       this.router.navigate(['/login']);
@@ -92,15 +90,15 @@ export class DashboardComponent implements OnInit {
     this.loggedInUserId = currentUser.id ?? null;
 
     const sb = localStorage.getItem('userBudget');
-  if (sb !== null) {
-    this.userEnteredBudget = +sb;
-  }
+    if (sb !== null) {
+      this.userEnteredBudget = +sb;
+    }
 
     const savedBudgets = localStorage.getItem('categoryBudgets');
     if (savedBudgets) {
       this.categoryBudgets = JSON.parse(savedBudgets);
     }
-  
+
     const sd = localStorage.getItem('startDate');
     if (sd) {
       this.startDate = sd;
@@ -108,9 +106,8 @@ export class DashboardComponent implements OnInit {
       this.startDate = this.getToday();
       localStorage.setItem('startDate', this.startDate);
     }
-      this.loadExpenses();
+    this.loadExpenses();
   }
-  
 
   getToday(): string {
     return new Date().toISOString().slice(0, 10);
@@ -124,32 +121,23 @@ export class DashboardComponent implements OnInit {
     return this.expenses
       .filter(e => e.isRecurring && !e.isRefund)
       .reduce((sum, e) => sum + e.amount, 0);
-  }  
+  }
 
   loadExpenses(): void {
     this.expenseService.getAllExpenses().subscribe({
       next: (allExpenses: Expense[]) => {
         this.expenses = allExpenses;
-        console.log('raw expenses from server:', allExpenses);
-        console.log('currentUserId is:', this.loggedInUserId);
-        const today = new Date();
-        const daysPassed = today.getDate();
-        const totalSpent = this.expenses
-          .filter(e => !e.isRefund)
-          .reduce((sum, e) => sum + e.amount, 0);
-        console.log(`Forecast debug → daysPassed=${daysPassed}, totalSpent=${totalSpent}`);
         this.calculateTotalSpent();
         this.calculateCategoryData();
       },
       error: (err: any) => console.error('Error loading expenses:', err)
     });
-  }  
-  
+  }
 
   calculateTotalSpent(): void {
-  const budget = this.userEnteredBudget ?? 500;
-  this.totalSpent = this.expenses.reduce((sum, e) => sum + e.amount, 0);
-  this.spendingPercentage = Math.min((this.totalSpent / budget) * 100, 999);
+    const budget = this.userEnteredBudget ?? 500;
+    this.totalSpent = this.expenses.reduce((sum, e) => sum + (e.isRefund ? -e.amount : e.amount), 0);
+    this.spendingPercentage = Math.min((this.totalSpent / budget) * 100, 999);
   }
 
   updateBudget(): void {
@@ -182,32 +170,27 @@ export class DashboardComponent implements OnInit {
     setTimeout(() => this.showToast = false, 3000);
   }
 
-
   private calculateCategoryData(): void {
-  const byCat = new Map<string, number>();
+    const byCat = new Map<string, number>();
 
-  // Initialize each category to 0
-  for (let cat of this.chartCategories) {
-    byCat.set(cat, 0);
+    for (let cat of this.chartCategories) {
+      byCat.set(cat, 0);
+    }
+
+    for (let e of this.expenses) {
+      const bucket = this.chartCategories.includes(e.category) ? e.category : 'Other';
+      byCat.set(bucket, (byCat.get(bucket) ?? 0) + (e.isRefund ? -e.amount : e.amount));
+    }
+
+    const budget = this.userEnteredBudget ?? 500;
+    const spent = Array.from(byCat.values()).reduce((a, b) => a + b, 0);
+    const remaining = Math.max(budget - spent, 0);
+
+    this.pieChartLabels = [...this.chartCategories, 'Remaining'];
+    this.pieChartData = [...Array.from(byCat.values()), remaining];
+
+    setTimeout(() => this.chart?.update(), 0);
   }
-
-  // Accumulate amounts by category (including refunds as negative values)
-  for (let e of this.expenses) {
-    const bucket = this.chartCategories.includes(e.category) ? e.category : 'Other';
-    byCat.set(bucket, (byCat.get(bucket) ?? 0) + e.amount);
-  }
-
-  // Calculate pie chart data
-  const budget = this.userEnteredBudget ?? 500;
-  const spent = Array.from(byCat.values()).reduce((a, b) => a + b, 0);
-  const remaining = Math.max(budget - spent, 0);
-
-  this.pieChartLabels = [...this.chartCategories, 'Remaining'];
-  this.pieChartData = [...Array.from(byCat.values()), remaining];
-
-  // Trigger pie chart update
-  setTimeout(() => this.chart?.update(), 0);
-}
 
   resetExpenses(): void {
     if (confirm('Delete all expenses?')) {
@@ -289,9 +272,9 @@ export class DashboardComponent implements OnInit {
     const totals: Record<string, number> = {};
     for (const cat of this.getCategoryKeys()) totals[cat] = 0;
     for (const e of this.expenses) {
-  const cat = this.categoryBudgets[e.category] !== undefined ? e.category : 'Other';
-  totals[cat] = (totals[cat] ?? 0) + e.amount;
-}
+      const cat = this.categoryBudgets[e.category] !== undefined ? e.category : 'Other';
+      totals[cat] = (totals[cat] ?? 0) + (e.isRefund ? -e.amount : e.amount);
+    }
     return totals;
   }
 
@@ -309,3 +292,4 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 }
+

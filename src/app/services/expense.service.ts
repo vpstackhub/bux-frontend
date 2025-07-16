@@ -10,31 +10,63 @@ export class ExpenseService {
 
   constructor(private http: HttpClient) {}
 
+  /** 🔐 AUTH HEADER HELPER */
+  private getAuthHeaders() {
+    const email = localStorage.getItem('authEmail');
+    const password = localStorage.getItem('authPassword');
+
+    if (!email || !password) {
+      console.warn('Missing credentials in localStorage');
+      return {};
+    }
+
+    const basicAuth = btoa(`${email}:${password}`);
+    return {
+      headers: {
+        Authorization: `Basic ${basicAuth}`
+      }
+    };
+  }
+
   /** CREATE */
   addExpense(expense: Expense): Observable<{ expense: Expense; emailSent: boolean }> {
     return this.http.post<{ expense: Expense; emailSent: boolean }>(
       this.apiUrl,
-      expense
+      expense,
+      this.getAuthHeaders()
     );
   }
 
   /** READ */
   getExpensesByUserId(userId: number): Observable<Expense[]> {
-    return this.http.get<Expense[]>(`${environment.apiUrl}/expenses/user/${userId}`);
-  }  
+    return this.http.get<Expense[]>(
+      `${environment.apiUrl}/expenses/user/${userId}`,
+      this.getAuthHeaders()
+    );
+  }
 
   /** REFUND */
   markExpenseAsRefund(expenseId: number): Observable<Expense> {
-    return this.http.put<Expense>(`${this.apiUrl}/refund/${expenseId}`, {});
+    return this.http.put<Expense>(
+      `${this.apiUrl}/refund/${expenseId}`,
+      {},
+      this.getAuthHeaders()
+    );
   }
 
-  getAllExpenses() {
-    return this.http.get<Expense[]>(`${this.apiUrl}`);
+  /** ADMIN VIEW */
+  getAllExpenses(): Observable<Expense[]> {
+    return this.http.get<Expense[]>(
+      `${this.apiUrl}`,
+      this.getAuthHeaders()
+    );
   }
-  
 
   /** RESET ALL */
   deleteAllExpenses(): Observable<string> {
-    return this.http.delete(`${this.apiUrl}/reset`, { responseType: 'text' });
-  }
+  return this.http.delete<string>(
+    `${this.apiUrl}/reset`,
+    this.getAuthHeaders()
+  );
+}
 }
