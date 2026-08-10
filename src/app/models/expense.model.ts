@@ -11,4 +11,5 @@ export interface Expense {
   recurringFrequency?: 'Monthly' | 'Weekly' | 'Yearly';
   accountId: number | null;
   username?: string;
+  displayName?: string;
 }

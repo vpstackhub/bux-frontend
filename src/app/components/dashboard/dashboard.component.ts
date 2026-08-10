@@ -14,10 +14,17 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 Chart.register(...registerables);
 Chart.register(ChartDataLabels);
 
+interface ExpenseMonthGroup {
+  key: string;
+  label: string;
+  expenses: Expense[];
+  total: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -26,6 +33,8 @@ export class DashboardComponent implements OnInit {
 
   loggedInUserId: number | null = null;
   expenses: Expense[] = [];
+  expenseMonthGroups: ExpenseMonthGroup[] = [];
+  readonly expandedMonthKeys = new Set<string>();
   accounts: Account[] = [];
   private accountNamesById = new Map<number, string>();
   accountMonthlyTotals: Array<{ accountId: number | null; name: string; total: number }> = [];
@@ -94,6 +103,7 @@ export class DashboardComponent implements OnInit {
     const now = new Date();
     this.currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     this.currentMonthLabel = now.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+    this.expandedMonthKeys.add(this.currentMonthKey);
   }
 
   ngOnInit(): void {
@@ -120,7 +130,7 @@ export class DashboardComponent implements OnInit {
 
   private get currentMonthExpenses(): Expense[] {
     return this.expenses.filter(
-      expense => expense.date.slice(0, 7) === this.currentMonthKey
+      expense => expense.date?.slice(0, 7) === this.currentMonthKey
     );
   }
 
@@ -173,12 +183,80 @@ export class DashboardComponent implements OnInit {
     this.expenseService.getAllExpenses().subscribe({
       next: (allExpenses: Expense[]) => {
         this.expenses = allExpenses;
+        this.buildExpenseMonthGroups();
         this.expensesLoaded = true;
         this.calculateTotalSpent();
         this.calculateCategoryData();
         this.calculateCurrentMonthAccountTotals();
       },
       error: (err: any) => console.error('Error loading expenses:', err)
+    });
+  }
+
+  isMonthExpanded(monthKey: string): boolean {
+    return this.expandedMonthKeys.has(monthKey);
+  }
+
+  toggleMonth(monthKey: string): void {
+    if (this.expandedMonthKeys.has(monthKey)) {
+      this.expandedMonthKeys.delete(monthKey);
+    } else {
+      this.expandedMonthKeys.add(monthKey);
+    }
+  }
+
+  private buildExpenseMonthGroups(): void {
+    const expensesByMonth = new Map<string, Expense[]>();
+
+    for (const expense of this.expenses) {
+      const monthKey = this.getExpenseMonthKey(expense);
+      const monthExpenses = expensesByMonth.get(monthKey) ?? [];
+      monthExpenses.push(expense);
+      expensesByMonth.set(monthKey, monthExpenses);
+    }
+
+    this.expenseMonthGroups = Array.from(expensesByMonth.entries())
+      .map(([key, expenses]) => {
+        const sortedExpenses = [...expenses].sort((a, b) => {
+          const dateComparison = (b.date ?? '').localeCompare(a.date ?? '');
+          if (dateComparison !== 0) {
+            return dateComparison;
+          }
+          return (b.id ?? 0) - (a.id ?? 0);
+        });
+
+        return {
+          key,
+          label: this.getMonthLabel(key),
+          expenses: sortedExpenses,
+          total: sortedExpenses.reduce(
+            (sum, expense) => sum + this.signedAmount(expense),
+            0
+          )
+        };
+      })
+      .sort((a, b) => {
+        if (a.key === 'unknown') return 1;
+        if (b.key === 'unknown') return -1;
+        return b.key.localeCompare(a.key);
+      });
+  }
+
+  private getExpenseMonthKey(expense: Expense): string {
+    return typeof expense.date === 'string' && /^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(expense.date)
+      ? expense.date.slice(0, 7)
+      : 'unknown';
+  }
+
+  private getMonthLabel(monthKey: string): string {
+    if (monthKey === 'unknown') {
+      return 'Unknown date';
+    }
+
+    const [year, month] = monthKey.split('-').map(Number);
+    return new Date(year, month - 1, 1).toLocaleString(undefined, {
+      month: 'long',
+      year: 'numeric'
     });
   }
 
