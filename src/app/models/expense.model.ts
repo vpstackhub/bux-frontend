@@ -9,13 +9,6 @@ export interface Expense {
   isRefund?: boolean;
   isRecurring?: boolean;
   recurringFrequency?: 'Monthly' | 'Weekly' | 'Yearly';
-  userId?: number;
+  accountId: number | null;
   username?: string;
 }
-
-
-
-
-
-
-  

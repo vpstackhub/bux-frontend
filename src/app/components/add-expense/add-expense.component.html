@@ -31,6 +31,27 @@
         />
       </div>
 
+      <!-- Account dropdown -->
+      <div class="form-group mb-3">
+        <label class="form-label" for="account">Account</label>
+        <select
+          id="account"
+          class="form-select"
+          [(ngModel)]="expense.accountId"
+          name="accountId"
+          [disabled]="accountsLoading || accounts.length === 0"
+          required
+        >
+          <option [ngValue]="null" disabled>Select account</option>
+          <option *ngFor="let account of accounts" [ngValue]="account.id">
+            {{ account.name }}
+          </option>
+        </select>
+        <div *ngIf="!accountsLoading && accounts.length === 0" class="text-danger mt-1">
+          No active accounts available.
+        </div>
+      </div>
+
       <!-- Category dropdown -->
       <div class="form-group mb-3">
         <label class="form-label" for="category">Category</label>
@@ -75,7 +96,11 @@
       </div>
 
       <!-- Submit -->
-      <button type="submit" class="btn btn-primary w-100">
+      <button
+        type="submit"
+        class="btn btn-primary w-100"
+        [disabled]="accountsLoading || accounts.length === 0"
+      >
         Save Expense
       </button>
 
