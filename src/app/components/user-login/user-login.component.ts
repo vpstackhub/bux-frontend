@@ -24,16 +24,11 @@ export class UserLoginComponent {
   ) {}
 
   login(): void {
-  console.log('Login payload:', this.user);
-
   this.authService.login(this.user).subscribe({
     next: userData => {
       // 🔐 Save email and password to localStorage for later use
       localStorage.setItem('authEmail', this.user.email);
       localStorage.setItem('authPassword', this.user.password);
-      console.log('🧪 Stored authEmail:', localStorage.getItem('authEmail'));
-      console.log('🧪 Stored authPassword:', localStorage.getItem('authPassword'));
-
 
       this.authService.setCurrentUser(userData);
       this.router.navigate(['/dashboard']);
