@@ -2,6 +2,8 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { Expense } from '../../models/expense.model';
 import { ExpenseService } from '../../services/expense.service';
 import { AuthService } from '../../services/auth.service';
+import { Account } from '../../models/account.model';
+import { AccountService } from '../../services/account.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -24,6 +26,13 @@ export class DashboardComponent implements OnInit {
 
   loggedInUserId: number | null = null;
   expenses: Expense[] = [];
+  accounts: Account[] = [];
+  accountMonthlyTotals: Array<{ accountId: number | null; name: string; total: number }> = [];
+  totalThisMonth = 0;
+  readonly currentMonthKey: string;
+  readonly currentMonthLabel: string;
+  private accountsLoaded = false;
+  private expensesLoaded = false;
   totalSpent = 0;
   spendingPercentage = 0;
   userEnteredBudget: number | null = null;
@@ -77,9 +86,14 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private expenseService: ExpenseService,
+    private accountService: AccountService,
     private router: Router,
     private authService: AuthService
-  ) {}
+  ) {
+    const now = new Date();
+    this.currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    this.currentMonthLabel = now.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  }
 
   ngOnInit(): void {
     const currentUser = this.authService.getCurrentUser();
@@ -106,6 +120,7 @@ export class DashboardComponent implements OnInit {
       this.startDate = this.getToday();
       localStorage.setItem('startDate', this.startDate);
     }
+    this.loadAccounts();
     this.loadExpenses();
   }
 
@@ -127,15 +142,76 @@ export class DashboardComponent implements OnInit {
       .reduce((sum, e) => sum + e.amount, 0);
   }
 
+  loadAccounts(): void {
+    this.accountService.getAccounts().subscribe({
+      next: accounts => {
+        this.accounts = accounts;
+        this.accountsLoaded = true;
+        this.calculateCurrentMonthAccountTotals();
+      },
+      error: err => console.error('Error loading accounts:', err)
+    });
+  }
+
   loadExpenses(): void {
     this.expenseService.getAllExpenses().subscribe({
       next: (allExpenses: Expense[]) => {
         this.expenses = allExpenses;
+        this.expensesLoaded = true;
         this.calculateTotalSpent();
         this.calculateCategoryData();
+        this.calculateCurrentMonthAccountTotals();
       },
       error: (err: any) => console.error('Error loading expenses:', err)
     });
+  }
+
+  private calculateCurrentMonthAccountTotals(): void {
+    if (!this.accountsLoaded || !this.expensesLoaded) {
+      return;
+    }
+
+    const totalsByAccountId = new Map<number, number>();
+    for (const account of this.accounts) {
+      totalsByAccountId.set(account.id, 0);
+    }
+
+    const currentMonthExpenses = this.expenses.filter(
+      expense => expense.date.slice(0, 7) === this.currentMonthKey
+    );
+
+    let unassignedTotal = 0;
+    let hasUnassignedExpenses = false;
+    this.totalThisMonth = 0;
+
+    for (const expense of currentMonthExpenses) {
+      const signedAmount = expense.isRefund ? -expense.amount : expense.amount;
+      this.totalThisMonth += signedAmount;
+
+      if (expense.accountId == null || !totalsByAccountId.has(expense.accountId)) {
+        unassignedTotal += signedAmount;
+        hasUnassignedExpenses = true;
+      } else {
+        totalsByAccountId.set(
+          expense.accountId,
+          (totalsByAccountId.get(expense.accountId) ?? 0) + signedAmount
+        );
+      }
+    }
+
+    this.accountMonthlyTotals = this.accounts.map(account => ({
+      accountId: account.id,
+      name: account.name,
+      total: totalsByAccountId.get(account.id) ?? 0
+    }));
+
+    if (hasUnassignedExpenses) {
+      this.accountMonthlyTotals.push({
+        accountId: null,
+        name: 'Unassigned',
+        total: unassignedTotal
+      });
+    }
   }
 
   calculateTotalSpent(): void {
