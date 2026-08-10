@@ -27,6 +27,7 @@ export class DashboardComponent implements OnInit {
   loggedInUserId: number | null = null;
   expenses: Expense[] = [];
   accounts: Account[] = [];
+  private accountNamesById = new Map<number, string>();
   accountMonthlyTotals: Array<{ accountId: number | null; name: string; total: number }> = [];
   totalThisMonth = 0;
   readonly currentMonthKey: string;
@@ -152,11 +153,20 @@ export class DashboardComponent implements OnInit {
     this.accountService.getAccounts().subscribe({
       next: accounts => {
         this.accounts = accounts;
+        this.accountNamesById = new Map(
+          accounts.map(account => [account.id, account.name])
+        );
         this.accountsLoaded = true;
         this.calculateCurrentMonthAccountTotals();
       },
       error: err => console.error('Error loading accounts:', err)
     });
+  }
+
+  getAccountName(accountId: number | null): string {
+    return accountId == null
+      ? 'Unassigned'
+      : this.accountNamesById.get(accountId) ?? 'Unassigned';
   }
 
   loadExpenses(): void {

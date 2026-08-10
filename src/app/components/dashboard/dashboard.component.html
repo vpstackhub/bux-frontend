@@ -148,6 +148,7 @@
         <tr>
           <th>ID</th>
           <th>User</th>
+          <th>Account</th>
           <th>Amount</th>
           <th>Category</th>
           <th>Description</th>
@@ -162,6 +163,7 @@
         >
           <td>{{ e.id }}</td>
           <td>{{ e.username }}</td>
+          <td>{{ getAccountName(e.accountId) }}</td>
           <td>{{ e.amount | number:'1.2-2' }}</td>
           <td>{{ e.category }}</td>
           <td>{{ e.description }}</td>
