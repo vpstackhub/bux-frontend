@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Expense } from '../../models/expense.model';
-import { ExpenseService } from '../../services/expense.service';
-import { Account } from '../../models/account.model';
-import { AccountService } from '../../services/account.service';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Expense } from '../../models/expense.model';
+import { Account } from '../../models/account.model';
 import { Category } from '../../models/category.model';
+import { ExpenseService } from '../../services/expense.service';
+import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -19,20 +19,24 @@ import { AuthService } from '../../services/auth.service';
 export class AddExpenseComponent implements OnInit {
   private readonly lastUsedAccountKey = 'bux.lastUsedAccountId';
 
-  expense: Expense = {
-    amount: 0,
+  expense: Omit<Expense, 'amount'> & { amount: number | null } = {
+    amount: null,
     category: Category.Other,
     description: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: this.getLocalDateKey(new Date()),
     isRefund: false,
     isRecurring: false,
+    recurringFrequency: undefined,
     accountId: null
   };
 
   accounts: Account[] = [];
   accountsLoading = true;
+  isSubmitting = false;
+  validationMessage = '';
+  accountLoadError = '';
 
-  public categories: Category[] = [
+  readonly categories: Category[] = [
     Category.Food,
     Category.Transport,
     Category.Utilities,
@@ -43,7 +47,7 @@ export class AddExpenseComponent implements OnInit {
   constructor(
     private expenseService: ExpenseService,
     private accountService: AccountService,
-    private authService: AuthService,        
+    private authService: AuthService,
     private router: Router
   ) {}
 
@@ -65,47 +69,87 @@ export class AddExpenseComponent implements OnInit {
       error: error => {
         console.error('Error loading accounts:', error);
         this.accountsLoading = false;
+        this.accountLoadError = 'Unable to load accounts. Please try again later.';
       }
     });
   }
 
-  addExpense(): void {
-    const currentUser = this.authService.getCurrentUser(); // ✅ Fetch logged-in user
+  get isSaveDisabled(): boolean {
+    return this.accountsLoading
+      || this.accounts.length === 0
+      || this.isSubmitting
+      || this.expense.amount == null
+      || !Number.isFinite(this.expense.amount)
+      || this.expense.amount <= 0
+      || !this.expense.date
+      || !this.expense.category
+      || this.expense.accountId == null;
+  }
 
-    if (!currentUser) {
-      this.showToast('❌ Please log in before adding expenses.', 'error');
+  addExpense(): void {
+    this.validationMessage = '';
+
+    if (!this.authService.getCurrentUser()) {
+      this.showToast('Please log in before adding expenses.', 'error');
       this.router.navigate(['/login']);
       return;
     }
 
-    if (this.expense.accountId == null) {
-      this.showToast('Please select an account.', 'error');
+    if (this.expense.amount == null || !Number.isFinite(this.expense.amount) || this.expense.amount <= 0) {
+      this.validationMessage = 'Enter an amount greater than $0.00.';
       return;
     }
 
-    if (this.expense.amount && this.expense.category && this.expense.date) {
-      this.expenseService.addExpense(this.expense).subscribe({
-        next: (response: any) => {
-          localStorage.setItem(this.lastUsedAccountKey, String(this.expense.accountId));
-          console.log('Expense added:', response);
-          const emailOk = response.emailSent !== false;
-          this.showToast(
-            emailOk
-              ? '✅ Expense added successfully!'
-              : '⚠️ Warning: Email alert failed. Expense was saved.',
-            emailOk ? 'success' : 'warning'
-          );
-          this.router.navigate(['/dashboard']);
-        },
-        error: (error) => {
-          console.error('Error adding expense:', error);
-          this.showToast('❌ Failed to add expense.', 'error');
-        }
-      });
+    if (!this.expense.date) {
+      this.validationMessage = 'Select a date.';
+      return;
     }
+
+    if (this.expense.accountId == null) {
+      this.validationMessage = 'Select an account.';
+      return;
+    }
+
+    if (!this.expense.category) {
+      this.validationMessage = 'Select a category.';
+      return;
+    }
+
+    const expenseToSave: Expense = {
+      ...this.expense,
+      amount: this.expense.amount,
+      description: this.expense.description?.trim() ?? '',
+      isRecurring: false,
+      recurringFrequency: undefined
+    };
+
+    this.isSubmitting = true;
+    this.expenseService.addExpense(expenseToSave).subscribe({
+      next: () => {
+        localStorage.setItem(this.lastUsedAccountKey, String(expenseToSave.accountId));
+        this.showToast('Expense added successfully!', 'success');
+        this.router.navigate(['/dashboard']);
+      },
+      error: error => {
+        console.error('Error adding expense:', error);
+        this.isSubmitting = false;
+        this.validationMessage = 'Unable to save the expense. Please try again.';
+      }
+    });
   }
 
-  showToast(message: string, type: 'success' | 'error' | 'warning'): void {
+  goToDashboard(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+  private getLocalDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private showToast(message: string, type: 'success' | 'error' | 'warning'): void {
     const toast = document.createElement('div');
     toast.textContent = message;
     toast.className = `toast ${type}`;
@@ -113,12 +157,7 @@ export class AddExpenseComponent implements OnInit {
       position: 'fixed',
       bottom: '30px',
       right: '30px',
-      backgroundColor:
-        type === 'success'
-          ? 'green'
-          : type === 'error'
-          ? 'red'
-          : 'orange',
+      backgroundColor: type === 'success' ? 'green' : type === 'error' ? 'red' : 'orange',
       color: 'white',
       padding: '12px 20px',
       borderRadius: '8px',
@@ -130,5 +169,3 @@ export class AddExpenseComponent implements OnInit {
     setTimeout(() => toast.remove(), 4000);
   }
 }
-
-
