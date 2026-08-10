@@ -67,79 +67,102 @@
     <button class="btn btn-outline-secondary" (click)="updateBudget()">Set limit</button>
   </div>
 
-  <!-- Current-month spending by account -->
-  <div class="card shadow-sm p-4 mb-4">
-    <h5 class="text-center mb-3">{{ currentMonthLabel }}</h5>
-    <div
-      *ngFor="let row of accountMonthlyTotals"
-      class="d-flex justify-content-between border-bottom py-2"
-    >
-      <span>{{ row.name }}</span>
-      <span>${{ row.total | number:'1.2-2' }}</span>
-    </div>
-    <div class="d-flex justify-content-between fw-bold pt-3">
-      <span>Total this month</span>
-      <span>${{ totalThisMonth | number:'1.2-2' }}</span>
-    </div>
-  </div>
-
-  <!-- 6. Category Budgets -->
-  <div class="card shadow-sm p-4 mb-5">
-    <h5 class="text-center mb-4">🎯 Category Budgets</h5>
-    <ng-container *ngFor="let cat of getCategoryKeys()">
-      <div class="mb-3">
-        <div class="d-flex justify-content-between mb-1">
-          <strong>{{ cat }}</strong>
-          <small>
-            ${{ (categorySpending[cat] || 0).toFixed(2) }} /
-            <input
-              type="number"
-              class="form-control form-control-sm d-inline-block"
-              style="width:80px"
-              [value]="categoryBudgets[cat]"
-              (change)="updateCategoryBudget(cat, $event)"
-            />
-          </small>
+  <section class="spending-breakdown" aria-label="Monthly spending breakdown">
+    <article class="spending-panel spending-panel--accounts">
+      <header class="spending-panel__header">
+        <div>
+          <p class="spending-panel__eyebrow">{{ currentMonthLabel }}</p>
+          <h2 class="spending-panel__title">By account</h2>
         </div>
-        <div class="progress" style="height:12px">
-          <div
-            class="progress-bar category-progress-bar"
-            [ngClass]="{
-              'category-progress-bar--food': cat === 'Food',
-              'category-progress-bar--transport': cat === 'Transport',
-              'category-progress-bar--utilities': cat === 'Utilities',
-              'category-progress-bar--entertainment': cat === 'Entertainment',
-              'category-progress-bar--other': cat === 'Other'
-            }"
-            [style.width.%]="
-              categorySpending[cat] > 0
-                ? (categorySpending[cat] / categoryBudgets[cat]) * 100
-                : 0
-            "
-          ></div>
+        <strong class="spending-panel__header-total">
+          ${{ totalThisMonth | number:'1.2-2' }}
+        </strong>
+      </header>
+
+      <div class="account-list">
+        <div *ngFor="let row of accountMonthlyTotals" class="account-row">
+          <span class="account-row__name">{{ row.name }}</span>
+          <strong class="account-row__amount">
+            ${{ row.total | number:'1.2-2' }}
+          </strong>
         </div>
       </div>
-    </ng-container>
-  </div>
+    </article>
 
-  <!-- 8. Overall Progress Bar -->
-  <div class="progress mb-3" style="height:30px">
-    <div
-      class="progress-bar progress-bar-striped progress-bar-animated"
-      role="progressbar"
-      [ngClass]="{
-        'bg-success': spendingPercentage < 70,
-        'bg-warning': spendingPercentage >= 70 && spendingPercentage < 100,
-        'bg-danger': spendingPercentage >= 100
-      }"
-      [style.width.%]="spendingPercentage"
-      [attr.aria-valuenow]="spendingPercentage"
-      aria-valuemin="0"
-      aria-valuemax="100"
-    >
-      {{ spendingPercentage.toFixed(1) }}%
-    </div>
-  </div>
+    <article class="spending-panel spending-panel--categories">
+      <header class="spending-panel__header">
+        <div>
+          <p class="spending-panel__eyebrow">Current month</p>
+          <h2 class="spending-panel__title">Categories</h2>
+        </div>
+      </header>
+
+      <div class="categories-overall-progress">
+        <div class="categories-overall-progress__label">
+          <span>Overall monthly limit</span>
+          <strong>
+            {{ spendingPercentage.toFixed(1) }}% used
+            <span>
+              (${{ totalSpent | number:'1.2-2' }} of
+              ${{ (userEnteredBudget ?? 500) | number:'1.2-2' }})
+            </span>
+          </strong>
+        </div>
+        <div
+          class="categories-overall-progress__track"
+          role="progressbar"
+          [attr.aria-valuenow]="spendingPercentage"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Overall monthly limit used"
+        >
+          <span
+            class="categories-overall-progress__fill"
+            [style.width.%]="spendingPercentage"
+          ></span>
+        </div>
+      </div>
+
+      <div class="category-list">
+        <div *ngFor="let row of categoryRows" class="category-row">
+          <div class="category-row__heading">
+            <strong class="category-row__name">{{ row.name }}</strong>
+            <span class="category-row__amount">
+              ${{ row.amount | number:'1.2-2' }}
+            </span>
+          </div>
+
+          <div class="category-row__bar" aria-hidden="true">
+            <span
+              class="category-row__bar-fill"
+              [ngClass]="{
+                'category-progress-bar--food': row.name === 'Food',
+                'category-progress-bar--transport': row.name === 'Transport',
+                'category-progress-bar--utilities': row.name === 'Utilities',
+                'category-progress-bar--entertainment': row.name === 'Entertainment',
+                'category-progress-bar--other': row.name === 'Other'
+              }"
+              [style.width.%]="row.progressPercent"
+            ></span>
+          </div>
+
+          <label class="category-row__budget">
+            <span>Limit</span>
+            <span class="category-row__budget-field">
+              <span aria-hidden="true">$</span>
+              <input
+                type="number"
+                min="0"
+                [attr.aria-label]="row.name + ' category limit'"
+                [value]="row.budget"
+                (change)="updateCategoryBudget(row.name, $event)"
+              />
+            </span>
+          </label>
+        </div>
+      </div>
+    </article>
+  </section>
 
   <!-- 9. Overdraft Warning -->
   <div class="text-center mb-4" *ngIf="remainingBudget < 0">

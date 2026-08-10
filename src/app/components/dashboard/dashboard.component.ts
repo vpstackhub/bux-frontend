@@ -21,6 +21,13 @@ interface ExpenseMonthGroup {
   total: number;
 }
 
+interface CategoryPresentationRow {
+  name: string;
+  amount: number;
+  budget: number;
+  progressPercent: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -449,6 +456,23 @@ export class DashboardComponent implements OnInit {
       totals[cat] = (totals[cat] ?? 0) + this.signedAmount(e);
     }
     return totals;
+  }
+
+  get categoryRows(): CategoryPresentationRow[] {
+    const spending = this.categorySpending;
+
+    return this.getCategoryKeys()
+      .map((name, originalIndex) => {
+        const amount = spending[name] ?? 0;
+        const budget = this.categoryBudgets[name] ?? 0;
+        const progressPercent = budget > 0
+          ? Math.min(Math.max((amount / budget) * 100, 0), 100)
+          : amount > 0 ? 100 : 0;
+
+        return { name, amount, budget, progressPercent, originalIndex };
+      })
+      .sort((a, b) => b.amount - a.amount || a.originalIndex - b.originalIndex)
+      .map(({ originalIndex: _originalIndex, ...row }) => row);
   }
 
   updateCategoryBudget(category: string, event: Event): void {
