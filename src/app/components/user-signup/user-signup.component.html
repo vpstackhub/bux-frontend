@@ -1,6 +1,18 @@
 <div class="container mt-5" style="max-width: 400px;">
   <h2 class="text-center mb-4">Sign Up</h2>
   <form (ngSubmit)="register()" #signupForm="ngForm">
+    <!-- Display name -->
+    <div class="mb-3">
+      <label class="form-label">Display name</label>
+      <input
+        type="text"
+        class="form-control"
+        [(ngModel)]="user.displayName"
+        name="displayName"
+        placeholder="Display name"
+        required
+      />
+    </div>
     <!-- Username -->
     <div class="mb-3">
       <label class="form-label">Username</label>

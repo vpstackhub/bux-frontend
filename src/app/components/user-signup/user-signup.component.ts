@@ -15,6 +15,7 @@ import { User } from '../../models/user.model';
 })
 export class UserSignupComponent {
     user: User = {
+    displayName: '',
     username: '',
     email: '',
     password: ''
@@ -23,6 +24,12 @@ export class UserSignupComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   register(): void {
+    const displayName = this.user.displayName?.trim();
+    if (!displayName) {
+      return;
+    }
+
+    this.user.displayName = displayName;
     this.authService.register(this.user).subscribe({
       next: () => {
         alert('✅ Registration successful!');
