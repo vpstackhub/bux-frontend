@@ -34,12 +34,12 @@ export class DashboardComponent implements OnInit {
   private accountsLoaded = false;
   private expensesLoaded = false;
   totalSpent = 0;
+  todayTotal = 0;
   spendingPercentage = 0;
   userEnteredBudget: number | null = null;
   selectedFunnyAlert = 'piggy';
   refundingExpenseId: number | null = null;
   showToast = false;
-  startDate = '';
   categoryBudgets: Record<string, number> = {
     Food: 300,
     Transport: 150,
@@ -113,19 +113,25 @@ export class DashboardComponent implements OnInit {
       this.categoryBudgets = JSON.parse(savedBudgets);
     }
 
-    const sd = localStorage.getItem('startDate');
-    if (sd) {
-      this.startDate = sd;
-    } else {
-      this.startDate = this.getToday();
-      localStorage.setItem('startDate', this.startDate);
-    }
     this.loadAccounts();
     this.loadExpenses();
   }
 
-  getToday(): string {
-    return new Date().toISOString().slice(0, 10);
+  private get currentMonthExpenses(): Expense[] {
+    return this.expenses.filter(
+      expense => expense.date.slice(0, 7) === this.currentMonthKey
+    );
+  }
+
+  private signedAmount(expense: Expense): number {
+    return expense.isRefund ? -expense.amount : expense.amount;
+  }
+
+  private getLocalDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   goToAddExpense(): void {
@@ -137,9 +143,9 @@ export class DashboardComponent implements OnInit {
   }
 
   get recurringForecast(): number {
-    return this.expenses
-      .filter(e => e.isRecurring && !e.isRefund)
-      .reduce((sum, e) => sum + e.amount, 0);
+    return this.currentMonthExpenses
+      .filter(e => e.isRecurring)
+      .reduce((sum, e) => sum + this.signedAmount(e), 0);
   }
 
   loadAccounts(): void {
@@ -176,16 +182,12 @@ export class DashboardComponent implements OnInit {
       totalsByAccountId.set(account.id, 0);
     }
 
-    const currentMonthExpenses = this.expenses.filter(
-      expense => expense.date.slice(0, 7) === this.currentMonthKey
-    );
-
     let unassignedTotal = 0;
     let hasUnassignedExpenses = false;
     this.totalThisMonth = 0;
 
-    for (const expense of currentMonthExpenses) {
-      const signedAmount = expense.isRefund ? -expense.amount : expense.amount;
+    for (const expense of this.currentMonthExpenses) {
+      const signedAmount = this.signedAmount(expense);
       this.totalThisMonth += signedAmount;
 
       if (expense.accountId == null || !totalsByAccountId.has(expense.accountId)) {
@@ -216,7 +218,14 @@ export class DashboardComponent implements OnInit {
 
   calculateTotalSpent(): void {
     const budget = this.userEnteredBudget ?? 500;
-    this.totalSpent = this.expenses.reduce((sum, e) => sum + (e.isRefund ? -e.amount : e.amount), 0);
+    this.totalSpent = this.currentMonthExpenses.reduce(
+      (sum, expense) => sum + this.signedAmount(expense),
+      0
+    );
+    const todayKey = this.getLocalDateKey(new Date());
+    this.todayTotal = this.currentMonthExpenses
+      .filter(expense => expense.date === todayKey)
+      .reduce((sum, expense) => sum + this.signedAmount(expense), 0);
     this.spendingPercentage = Math.min((this.totalSpent / budget) * 100, 999);
   }
 
@@ -257,9 +266,9 @@ export class DashboardComponent implements OnInit {
       byCat.set(cat, 0);
     }
 
-    for (let e of this.expenses) {
+    for (let e of this.currentMonthExpenses) {
       const bucket = this.chartCategories.includes(e.category) ? e.category : 'Other';
-      byCat.set(bucket, (byCat.get(bucket) ?? 0) + (e.isRefund ? -e.amount : e.amount));
+      byCat.set(bucket, (byCat.get(bucket) ?? 0) + this.signedAmount(e));
     }
 
     const budget = this.userEnteredBudget ?? 500;
@@ -278,14 +287,6 @@ export class DashboardComponent implements OnInit {
         next: () => { this.loadExpenses(); },
         error: err => console.error('Error resetting:', err)
       });
-    }
-  }
-
-  resetStartDate(): void {
-    if (confirm('Reset start date?')) {
-      this.startDate = this.getToday();
-      localStorage.setItem('startDate', this.startDate);
-      alert('✅ Start date reset to today.');
     }
   }
 
@@ -315,7 +316,9 @@ export class DashboardComponent implements OnInit {
     const budget = this.userEnteredBudget ?? 500;
     const today = new Date().getDate();
     const percent = this.spendingPercentage;
-    const entertainment = this.expenses.filter(e => e.category === 'Entertainment' && !e.isRefund).reduce((sum, e) => sum + e.amount, 0);
+    const entertainment = this.currentMonthExpenses
+      .filter(e => e.category === 'Entertainment')
+      .reduce((sum, e) => sum + this.signedAmount(e), 0);
 
     if (percent >= 150) return { icon: '💥', message: 'You exploded your budget!', color: 'danger' };
     if (percent >= 100) return { icon: '🚫', message: 'You’ve gone over budget.', color: 'danger' };
@@ -331,10 +334,12 @@ export class DashboardComponent implements OnInit {
     const today = new Date();
     const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const daysPassed = today.getDate();
-    const actualExpenses = this.expenses.filter(e => !e.isRefund);
-    const totalSpent = actualExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalSpent = this.currentMonthExpenses.reduce(
+      (sum, expense) => sum + this.signedAmount(expense),
+      0
+    );
 
-    if (daysPassed <= 3 || totalSpent === 0) return '📈 Not enough data yet to forecast.';
+    if (daysPassed <= 3 || totalSpent <= 0) return '📈 Not enough data yet to forecast.';
 
     const projected = (totalSpent / daysPassed) * totalDays;
     const diff = projected - budget;
@@ -351,9 +356,9 @@ export class DashboardComponent implements OnInit {
   get categorySpending(): Record<string, number> {
     const totals: Record<string, number> = {};
     for (const cat of this.getCategoryKeys()) totals[cat] = 0;
-    for (const e of this.expenses) {
+    for (const e of this.currentMonthExpenses) {
       const cat = this.categoryBudgets[e.category] !== undefined ? e.category : 'Other';
-      totals[cat] = (totals[cat] ?? 0) + (e.isRefund ? -e.amount : e.amount);
+      totals[cat] = (totals[cat] ?? 0) + this.signedAmount(e);
     }
     return totals;
   }
