@@ -24,6 +24,12 @@ export const routes: Routes = [
   // 3) protected app routes
   { path: 'dashboard', component: DashboardComponent },
   { path: 'add-expense', component: AddExpenseComponent },
+  {
+    path: 'accounts',
+    loadComponent: () =>
+      import('./components/manage-accounts/manage-accounts.component')
+        .then(m => m.ManageAccountsComponent)
+  },
 
   // 4) anything else → back to login
   { path: '**', redirectTo: '/login' }

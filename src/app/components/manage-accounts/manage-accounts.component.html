@@ -1,0 +1,51 @@
+<div class="container mt-5" style="max-width: 600px;">
+  <div class="card p-4 shadow-sm">
+    <h2 class="mb-4">Manage Accounts</h2>
+
+    <form (ngSubmit)="addAccount()" class="mb-4">
+      <label for="accountName" class="form-label">Account name</label>
+      <div class="input-group">
+        <input
+          id="accountName"
+          type="text"
+          class="form-control"
+          name="accountName"
+          [(ngModel)]="accountName"
+          placeholder="e.g. Chase Freedom"
+          required
+        />
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="creating || !accountName.trim()"
+        >
+          {{ creating ? 'Adding...' : 'Add Account' }}
+        </button>
+      </div>
+    </form>
+
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      {{ errorMessage }}
+    </div>
+
+    <p *ngIf="loading" class="text-muted">Loading accounts...</p>
+
+    <ul *ngIf="!loading && accounts.length" class="list-group mb-4">
+      <li
+        *ngFor="let account of accounts"
+        class="list-group-item d-flex justify-content-between align-items-center"
+      >
+        <span>{{ account.name }}</span>
+        <span class="badge" [ngClass]="account.active ? 'bg-success' : 'bg-secondary'">
+          {{ account.active ? 'Active' : 'Inactive' }}
+        </span>
+      </li>
+    </ul>
+
+    <p *ngIf="!loading && !accounts.length && !errorMessage" class="text-muted">
+      No accounts yet.
+    </p>
+
+    <a routerLink="/dashboard" class="btn btn-outline-secondary">Back to Dashboard</a>
+  </div>
+</div>

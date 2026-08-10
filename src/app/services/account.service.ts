@@ -30,4 +30,8 @@ export class AccountService {
   getAccounts(): Observable<Account[]> {
     return this.http.get<Account[]>(this.apiUrl, this.getAuthHeaders());
   }
+
+  createAccount(account: { name: string }): Observable<Account> {
+    return this.http.post<Account>(this.apiUrl, account, this.getAuthHeaders());
+  }
 }

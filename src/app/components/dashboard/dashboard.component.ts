@@ -117,6 +117,10 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/add-expense']);
   }
 
+  goToAccounts(): void {
+    this.router.navigate(['/accounts']);
+  }
+
   get recurringForecast(): number {
     return this.expenses
       .filter(e => e.isRecurring && !e.isRefund)
