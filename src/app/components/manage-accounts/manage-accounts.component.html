@@ -46,6 +46,60 @@
       No accounts yet.
     </p>
 
+    <section class="border-top pt-4 mt-4 mb-4" aria-labelledby="recurring-expenses-heading">
+      <h3 id="recurring-expenses-heading" class="h5 mb-3">Recurring expenses</h3>
+
+      <div *ngIf="recurringErrorMessage" class="alert alert-danger py-2">
+        {{ recurringErrorMessage }}
+      </div>
+
+      <p *ngIf="recurringLoading" class="text-muted mb-0">
+        Loading recurring expenses...
+      </p>
+
+      <div *ngIf="!recurringLoading && recurringExpenses.length" class="list-group">
+        <div
+          *ngFor="let recurringExpense of recurringExpenses"
+          class="list-group-item py-2"
+        >
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div class="min-w-0">
+              <strong class="d-block text-truncate">
+                {{ getRecurringDescription(recurringExpense) }}
+              </strong>
+              <small class="text-muted d-block">
+                {{ getAccountName(recurringExpense.accountId) }} · {{ recurringExpense.category }}
+              </small>
+              <small class="text-muted d-block">
+                {{ getMonthlyDueDay(recurringExpense.startDate) }}
+              </small>
+            </div>
+
+            <div class="text-end flex-shrink-0">
+              <strong class="d-block mb-1">
+                ${{ recurringExpense.amount | number:'1.2-2' }}
+              </strong>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                (click)="stopRecurringExpense(recurringExpense)"
+                [disabled]="stoppingRecurringIds.has(recurringExpense.id)"
+              >
+                {{ stoppingRecurringIds.has(recurringExpense.id) ? 'Stopping...' : 'Stop' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p
+        *ngIf="!recurringLoading && !recurringExpenses.length && !recurringErrorMessage"
+        class="text-muted mb-0"
+      >
+        No active recurring expenses.
+      </p>
+    </section>
+
     <a routerLink="/dashboard" class="btn btn-outline-secondary">Back to Dashboard</a>
   </div>
 </div>

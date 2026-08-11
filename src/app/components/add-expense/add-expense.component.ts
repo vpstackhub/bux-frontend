@@ -8,6 +8,8 @@ import { Category } from '../../models/category.model';
 import { ExpenseService } from '../../services/expense.service';
 import { AccountService } from '../../services/account.service';
 import { AuthService } from '../../services/auth.service';
+import { RecurringExpenseService } from '../../services/recurring-expense.service';
+import { CreateRecurringExpenseRequest } from '../../models/recurring-expense.model';
 
 @Component({
   selector: 'app-add-expense',
@@ -35,6 +37,7 @@ export class AddExpenseComponent implements OnInit {
   isSubmitting = false;
   validationMessage = '';
   accountLoadError = '';
+  repeatMonthly = false;
 
   readonly categories: Category[] = [
     Category.Food,
@@ -47,6 +50,7 @@ export class AddExpenseComponent implements OnInit {
   constructor(
     private expenseService: ExpenseService,
     private accountService: AccountService,
+    private recurringExpenseService: RecurringExpenseService,
     private authService: AuthService,
     private router: Router
   ) {}
@@ -115,27 +119,57 @@ export class AddExpenseComponent implements OnInit {
       return;
     }
 
+    if (this.repeatMonthly && this.expense.isRefund) {
+      this.validationMessage = 'A refund or credit cannot repeat monthly.';
+      return;
+    }
+
+    const description = this.expense.description?.trim() ?? '';
+
+    this.isSubmitting = true;
+
+    if (this.repeatMonthly) {
+      const recurringExpense: CreateRecurringExpenseRequest = {
+        accountId: this.expense.accountId,
+        amount: this.expense.amount,
+        category: this.expense.category,
+        description,
+        startDate: this.expense.date
+      };
+
+      this.recurringExpenseService.createRecurringExpense(recurringExpense).subscribe({
+        next: () => this.handleSaveSuccess('Recurring expense added successfully!'),
+        error: error => this.handleSaveError(error, 'Unable to save the recurring expense. Please try again.')
+      });
+      return;
+    }
+
     const expenseToSave: Expense = {
       ...this.expense,
       amount: this.expense.amount,
-      description: this.expense.description?.trim() ?? '',
+      description,
       isRecurring: false,
       recurringFrequency: undefined
     };
 
-    this.isSubmitting = true;
     this.expenseService.addExpense(expenseToSave).subscribe({
-      next: () => {
-        localStorage.setItem(this.lastUsedAccountKey, String(expenseToSave.accountId));
-        this.showToast('Expense added successfully!', 'success');
-        this.router.navigate(['/dashboard']);
-      },
-      error: error => {
-        console.error('Error adding expense:', error);
-        this.isSubmitting = false;
-        this.validationMessage = 'Unable to save the expense. Please try again.';
-      }
+      next: () => this.handleSaveSuccess('Expense added successfully!'),
+      error: error => this.handleSaveError(error, 'Unable to save the expense. Please try again.')
     });
+  }
+
+  onRefundChange(isRefund: boolean): void {
+    this.expense.isRefund = isRefund;
+    if (isRefund) {
+      this.repeatMonthly = false;
+    }
+  }
+
+  onRepeatMonthlyChange(repeatMonthly: boolean): void {
+    this.repeatMonthly = repeatMonthly;
+    if (repeatMonthly) {
+      this.expense.isRefund = false;
+    }
   }
 
   goToDashboard(): void {
@@ -147,6 +181,18 @@ export class AddExpenseComponent implements OnInit {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private handleSaveSuccess(message: string): void {
+    localStorage.setItem(this.lastUsedAccountKey, String(this.expense.accountId));
+    this.showToast(message, 'success');
+    this.router.navigate(['/dashboard']);
+  }
+
+  private handleSaveError(error: unknown, message: string): void {
+    console.error('Error adding expense:', error);
+    this.isSubmitting = false;
+    this.validationMessage = message;
   }
 
   private showToast(message: string, type: 'success' | 'error' | 'warning'): void {

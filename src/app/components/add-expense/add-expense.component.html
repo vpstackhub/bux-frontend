@@ -31,6 +31,9 @@
           class="form-control"
           required
         />
+        <small *ngIf="repeatMonthly" class="text-muted d-block mt-1">
+          First payment date. Future payments repeat monthly on this day.
+        </small>
       </div>
 
       <div class="form-group mb-3">
@@ -91,9 +94,24 @@
           type="checkbox"
           class="form-check-input"
           [(ngModel)]="expense.isRefund"
+          (ngModelChange)="onRefundChange($event)"
           name="isRefund"
+          [disabled]="repeatMonthly"
         />
         <label class="form-check-label" for="isRefund">Refund or credit</label>
+      </div>
+
+      <div class="mb-4 form-check">
+        <input
+          id="repeatMonthly"
+          type="checkbox"
+          class="form-check-input"
+          [(ngModel)]="repeatMonthly"
+          (ngModelChange)="onRepeatMonthlyChange($event)"
+          name="repeatMonthly"
+          [disabled]="expense.isRefund === true"
+        />
+        <label class="form-check-label" for="repeatMonthly">Repeat monthly</label>
       </div>
 
       <div *ngIf="validationMessage" class="alert alert-danger py-2" role="alert">
